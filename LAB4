@@ -1,0 +1,95 @@
+LAB 4
+EX1
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+from graphviz import Source
+from sklearn.tree import export_graphviz
+
+np.random.seed(42)
+n = 350
+X = np.random.rand(n, 1)
+y = (X+1.2)**3 -10 + np.random.randn(n,1)/10
+from sklearn.tree import DecisionTreeRegressor
+
+tree_reg = DecisionTreeRegressor(max_depth=3, random_state=42, min_samples_leaf=5)
+tree_reg.fit(X, y)
+export_graphviz(
+        tree_reg,
+        out_file=os.path.join(".", "regression_tree.dot"),
+        feature_names=["x1"],
+        rounded=True,
+        filled=True
+    )
+
+Source.from_file(os.path.join(".", "regression_tree.dot"))
+def plot_regression_predictions(tree_reg, X, y, axes=[0, 1, -0.2, 1]):
+    x1 = np.linspace(axes[0], axes[1], 500).reshape(-1, 1)
+    y_pred = tree_reg.predict(x1)
+    plt.xlabel("$x_1$", fontsize=18)
+    plt.ylabel("$y$", fontsize=18, rotation=0)
+    plt.plot(X, y, "b.")
+    plt.plot(x1, y_pred, "r.-", linewidth=2, label=r"$\hat{y}$")
+plot_regression_predictions(tree_reg, X, y)
+plt.show()
+
+EX2
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+digits_dataset=datasets.load_digits()
+X_train, X_test, y_train, y_test = train_test_split(digits_dataset['data'], digits_dataset['target'], random_state=0,test_size=0.15)
+bag_clf = BaggingClassifier(
+    DecisionTreeClassifier(), n_estimators=200,
+    max_samples=100, bootstrap=True, random_state=42)
+bag_clf.fit(X_train, y_train)
+y_pred = bag_clf.predict(X_test)
+print(accuracy_score(y_test, y_pred))
+
+EX3
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+np.random.seed(42)
+X = np.random.rand(160, 1) - 1
+y = 2*X[:, 0]**2 + 0.2 * np.random.randn(160)
+
+X_train, X_val, y_train, y_val = train_test_split(X, y, random_state=49,test_size=0.25)
+from sklearn.ensemble import GradientBoostingRegressor
+
+gbrt = GradientBoostingRegressor(max_depth=2, n_estimators=100, random_state=42)
+gbrt.fit(X_train, y_train)
+
+errors = [mean_squared_error(y_val, y_pred)
+          for y_pred in gbrt.staged_predict(X_val)]
+bst_n_estimators = np.argmin(errors) + 1
+
+gbrt_best = GradientBoostingRegressor(max_depth=2, n_estimators=bst_n_estimators, random_state=42)
+gbrt_best.fit(X_train, y_train)
+min_error = np.min(errors)
+
+def plot_predictions(regressors, X, y, axes, label=None, style="r-", data_style="b.", data_label=None):
+    x1 = np.linspace(axes[0], axes[1], 500)
+    y_pred = sum(regressor.predict(x1.reshape(-1, 1)) for regressor in regressors)
+    plt.plot(X[:, 0], y, data_style, label=data_label)
+    plt.plot(x1, y_pred, style, linewidth=2, label=label)
+    if label or data_label:
+        plt.legend(loc="upper center", fontsize=16)
+    plt.axis(axes)
+plt.figure(figsize=(10, 4))
+plt.subplot(121)
+plot_predictions([gbrt], X, y, axes=[-0.5, 0.5, -0.1, 0.8])
+plt.title("simple model 100 trees", fontsize=14)
+plt.ylabel("$y$", fontsize=16, rotation=0)
+plt.xlabel("$x_1$", fontsize=16)
+
+
+plt.subplot(122)
+plot_predictions([gbrt_best], X, y, axes=[-0.5, 0.5, -0.1, 0.8])
+plt.title("Best model (%d trees)" % bst_n_estimators, fontsize=14)
+plt.ylabel("$y$", fontsize=16, rotation=0)
+plt.xlabel("$x_1$", fontsize=16)
