@@ -48,3 +48,40 @@ ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 plt.show()
+
+EX2
+
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.decomposition import PCA
+import time
+from sklearn.metrics import accuracy_score
+
+digits_dataset=datasets.load_digits()
+X = digits_dataset["data"]
+y = digits_dataset["target"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,test_size=0.25)
+svm_clf = SVC(kernel="linear", C=5)
+start = time.time()
+svm_clf.fit(X_train, y_train)
+stop = time.time()
+print(f"Training time: {stop - start}s")
+y_pred=svm_clf.predict(X_test)
+print(accuracy_score(y_pred,y_test))
+
+
+pca1 = PCA(n_components=20)
+X_reduced1 = pca1.fit_transform(X_train)
+X_reduced2 = pca1.transform(X_test)
+start = time.time()
+svm_clf.fit(X_reduced1, y_train)
+stop = time.time()
+print(f"Training time: {stop - start}s")
+y_pred=svm_clf.predict(X_reduced2)
+print(accuracy_score(y_pred,y_test))
+
+
+
+
