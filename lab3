@@ -1,0 +1,146 @@
+#ex1
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.datasets import make_moons
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+
+X, y = make_moons(n_samples=200, noise=0.15, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, test_size=0.45)
+
+h = 0.02  # Step size in the mesh
+
+# Create color maps
+cmap_light = ListedColormap(["orange", "cornflowerblue"])
+cmap_bold = ["darkorange", "darkblue"]
+
+clf = KNeighborsClassifier(n_neighbors=2)
+clf.fit(X_train, y_train)
+clf.predict(X_test)
+clf.score(X_test, y_test)
+
+for n_neighbors in [1, 5, 9]:
+    # We create an instance of KNeighborsClassifier and fit the data.
+    clf = KNeighborsClassifier(n_neighbors)
+    clf.fit(X, y)
+
+    # Plot the decision boundary. For that, we will assign a color to each
+    # point in the mesh [x_min, x_max]x[y_min, y_max].
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+
+    # Put the result into a color plot
+    Z = Z.reshape(xx.shape)
+    plt.figure(figsize=(8, 6))
+    plt.contourf(xx, yy, Z, cmap=cmap_light)
+    
+    # Plot also the training points
+    # range(n) nr of colour
+    for i in range(2):
+      plt.scatter(X[:, 0][y==i], X[:, 1][y==i], c=cmap_bold[i], 
+                  edgecolors="black")
+
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("3-class classification, k = %i" % (n_neighbors))
+    plt.xlabel("Sepal length")
+    plt.ylabel("Sepal width")
+
+plt.show()
+
+
+
+
+
+
+
+
+
+#ex2
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.svm import SVC
+from sklearn.datasets import make_moons
+from sklearn.datasets import make_gaussian_quantiles
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
+
+X, y = make_gaussian_quantiles(cov=7., n_samples=250, n_features=2, n_classes=3, random_state=1)
+
+
+poly_kernel_svm_clf = Pipeline([
+        ("scaler", StandardScaler()),
+        ("svm_clf", SVC(kernel="poly", degree=3, coef0=10, C=5))
+    ])
+poly_kernel_svm_clf.fit(X, y)
+
+def plot_predictions(clf, axes):
+    x0s = np.linspace(axes[0], axes[1], 100)
+    x1s = np.linspace(axes[2], axes[3], 100)
+    x0, x1 = np.meshgrid(x0s, x1s)
+    X = np.c_[x0.ravel(), x1.ravel()]
+    y_pred = clf.predict(X).reshape(x0.shape)
+    plt.contourf(x0, x1, y_pred, cmap=plt.cm.brg, alpha=0.2)
+
+def plot_dataset(X, y, axes):
+    plt.plot(X[:, 0][y==0], X[:, 1][y==0], "bs")
+    plt.plot(X[:, 0][y==1], X[:, 1][y==1], "g^")
+    plt.plot(X[:, 0][y==2], X[:, 1][y==2], "r.")
+    plt.axis(axes)
+    plt.grid(True, which='both')
+    plt.xlabel(r"$x_1$", fontsize=20)
+    plt.ylabel(r"$x_2$", fontsize=20, rotation=0)
+
+poly100_kernel_svm_clf.fit(X, y)
+
+plot_predictions(poly_kernel_svm_clf, [-10, 10, -10, 10])
+plot_dataset(X, y, [-10, 10, -10, 10])
+plt.title(r"$p=3, \beta=1, C=5$", fontsize=18)
+
+plt.show()
+
+
+#ex3
+from sklearn.svm import LinearSVR
+from sklearn.svm import SVR
+
+np.random.seed(42)
+n = 50
+X = 6 * np.random.rand(n, 1)
+y = (1 - 2 * X + np.random.rand(n, 1)).ravel()
+
+svm_reg1 = LinearSVR(epsilon=0.8, random_state=42)
+svm_reg1.fit(X, y)
+
+def find_support_vectors(svm_reg, X, y):
+    y_pred = svm_reg.predict(X)
+    off_margin = (np.abs(y - y_pred) >= svm_reg.epsilon)
+    return np.argwhere(off_margin)
+
+svm_reg1.support_ = find_support_vectors(svm_reg1, X, y)
+
+def plot_svm_regression(svm_reg, X, y, axes):
+    x1s = np.linspace(axes[0], axes[1], 100).reshape(100, 1)
+    y_pred = svm_reg.predict(x1s)
+    plt.plot(x1s, y_pred, "k-", linewidth=2, label=r"$\hat{y}$")
+    plt.plot(x1s, y_pred + svm_reg.epsilon, "k--")
+    plt.plot(x1s, y_pred - svm_reg.epsilon, "k--")
+    plt.scatter(X[svm_reg.support_], y[svm_reg.support_], s=200, facecolors='#FFAAAA')
+    plt.plot(X, y, "bo")
+    plt.xlabel(r"$x_1$", fontsize=18)
+    plt.legend(loc="upper left", fontsize=18)
+    plt.axis(axes)
+
+x_min, x_max = X.min() - 1, X.max() + 1
+y_min, y_max = y.min() - 1, y.max() + 1
+
+plot_svm_regression(svm_reg1, X, y, [x_min, x_max, y_min, y_max])
+plt.title(r"$\epsilon = {}$".format(svm_reg1.epsilon), fontsize=18)
+plt.ylabel(r"$y$", fontsize=18, rotation=0)
+
+plt.show()
+
