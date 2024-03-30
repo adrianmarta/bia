@@ -1,0 +1,97 @@
+#ex1
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+
+X = (2- 3 * np.random.normal(0, 1, 200)).reshape(200,1)
+y = 0.5*X**3 - 2*X**2 + X + np.random.normal(-3, 3, 200).reshape(-1,1)
+
+poly_features = PolynomialFeatures(degree=3, include_bias=False)
+X_poly = poly_features.fit_transform(X)
+
+lin_reg = LinearRegression()
+lin_reg.fit(X_poly, y)
+
+X_test = np.linspace(-5, 10, 200).reshape(200, 1)
+X_test_poly = poly_features.transform(X_test)
+
+y_test = lin_reg.predict(X_test_poly)
+
+plt.plot(X, y, "b.")
+plt.plot(X_test, y_test, "r-", linewidth=2, label="Predictions")
+plt.title("polynomial regression")
+plt.xlabel("$x_1$", fontsize=18)
+plt.ylabel("$y$", rotation=0, fontsize=18)
+plt.legend(loc="upper left", fontsize=14)
+plt.show()
+
+
+
+
+
+#ex2
+
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(42)
+
+X = 3 * np.random.rand(150, 1)
+y = -2 + 3*X + np.random.randn(150, 1)
+X_1 = np.c_[np.ones((150, 1)), X]
+X_new=np.linspace(0, 3, 150).reshape(150,1)
+n=150
+X_new_1=np.c_[np.ones((150, 1)), X_new]
+
+eta = 0.06
+n_epochs = 15
+batch_size = 10
+
+w = np.random.randn(2,1)  
+
+for epoch in range(n_epochs):
+    shuffled_indices = np.random.permutation(n)
+    X_1_shuffled = X_1[shuffled_indices]
+    y_shuffled = y[shuffled_indices]
+    for i in range(0, n, batch_size):
+        xi = X_1_shuffled[i:i+batch_size]
+        yi = y_shuffled[i:i+batch_size]
+        gradients = 1/batch_size * xi.T.dot(xi.dot(w) - yi) + 0.01*w
+        w = w - eta * gradients
+print(w)
+
+y_predict = X_new_1.dot(w)
+y_predict
+
+plt.plot(X_new, y_predict, "r-", linewidth=2, label="Predictions")
+plt.plot(X, y, "b.")
+plt.xlabel("$x_1$", fontsize=18)
+plt.ylabel("$y$", rotation=0, fontsize=18)
+plt.legend(loc="upper left", fontsize=14)
+plt.show()
+
+
+
+
+
+#ex3
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import datasets
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+
+digits_dataset = datasets.load_digits()
+digits_dataset.keys()
+X_train, X_test, y_train, y_test = train_test_split(digits_dataset['data'], digits_dataset['target'], random_state=0, test_size=0.35)
+softmax_reg = LogisticRegression(max_iter=700, multi_class="multinomial", solver="lbfgs", C=5, random_state=42)
+softmax_reg.fit(X_train, y_train)
+print(softmax_reg.score(X_test, y_test))
+print(softmax_reg.predict([X_test[1]]))
+print(softmax_reg.predict_proba([X_test[1]]))
+print(X_train.shape, y_train.shape)
+print(X_test.shape, y_test.shape)
+
+
